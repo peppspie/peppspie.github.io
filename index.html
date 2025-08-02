@@ -53,7 +53,14 @@
             <div class="bg-gray-800 rounded-xl shadow-2xl p-6 md:p-8">
                 <h2 class="text-2xl font-semibold mb-6 text-white border-b border-gray-700 pb-3">Squadre</h2>
                 <div id="teams-setup-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-                <div class="mt-8 text-center">
+                <div class="mt-8 flex flex-col md:flex-row gap-4 justify-center">
+                    <div class="flex flex-col items-center">
+                        <input type="file" id="file-input" accept=".json,.yaml,.yml" class="hidden">
+                        <button id="load-teams-btn"
+                            class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50">
+                            Carica Squadre
+                        </button>
+                    </div>
                     <button id="start-tournament-btn"
                         class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
                         Inizia Torneo
@@ -107,6 +114,8 @@
             const setupContainer = document.getElementById('setup-container');
             const tournamentContainer = document.getElementById('tournament-container');
             const teamsSetupGrid = document.getElementById('teams-setup-grid');
+            const fileInput = document.getElementById('file-input');
+            const loadTeamsBtn = document.getElementById('load-teams-btn');
             const startTournamentBtn = document.getElementById('start-tournament-btn');
             const matchesContainer = document.getElementById('matches-container');
             const standingsBody = document.getElementById('standings-body');
@@ -118,15 +127,16 @@
 
             let state = {
                 teams: [
-                    { id: 1, name: 'Team 1', player1: 'Giuseppe', player2: 'Chiara' },
-                    { id: 2, name: 'Team 2', player1: 'Alessandro', player2: 'Martina' },
-                    { id: 3, name: 'Team 3', player1: 'Onofrio', player2: 'Alessia' },
-                    { id: 4, name: 'Team 4', player1: 'Alfonso', player2: 'Assia' }
+                    { id: 1, name: '', player1: '', player2: '' },
+                    { id: 2, name: '', player1: '', player2: '' },
+                    { id: 3, name: '', player1: '', player2: '' },
+                    { id: 4, name: '', player1: '', player2: '' }
                 ],
                 matches: [],
                 standings: [],
                 appView: 'setup',
-                finalsGenerated: false
+                finalsGenerated: false,
+                finalsMatches: []
             };
 
             function saveState() {
@@ -230,35 +240,78 @@
             function renderFinals() {
                 if (state.standings.length < 4) return;
                 const [first, second, third, fourth] = state.standings.map(s => state.teams.find(t => t.id === s.teamId));
+
+                if (state.finalsMatches.length === 0) {
+                    state.finalsMatches = [
+                        { id: 'final-12', teamA: first, teamB: second, setsA: null, setsB: null, games: [{}, {}, {}], type: 'gold' },
+                        { id: 'final-34', teamA: third, teamB: fourth, setsA: null, setsB: null, games: [{}, {}, {}], type: 'bronze' }
+                    ];
+                }
+
                 finalsContainer.innerHTML = `
                     <h2 class="text-3xl font-bold text-center text-white mt-10 mb-4">Fase Finale</h2>
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-amber-400">
-                        <h3 class="text-xl font-semibold text-center text-amber-300 mb-4">Finale 1° e 2° Posto</h3>
-                        <div class="flex justify-between items-center">
-                            <div class="text-center w-2/5">
-                                <div class="font-bold text-lg">${first.name}</div>
-                                <div class="text-sm text-gray-400">${first.player1} - ${first.player2}</div>
+                    ${state.finalsMatches.map(match => {
+                        const isMatchComplete = match.setsA === 2 || match.setsB === 2;
+                        const cardBorder = isMatchComplete ? 'border-green-500' : (match.type === 'gold' ? 'border-amber-400' : 'border-slate-400');
+                        const titleColor = match.type === 'gold' ? 'text-amber-300' : 'text-slate-300';
+                        const matchTitle = match.type === 'gold' ? 'Finale 1° e 2° Posto' : 'Finale 3° e 4° Posto';
+
+                        let liveSetsA = 0, liveSetsB = 0;
+                        for (const set of match.games) {
+                            if (set.gamesA !== null || set.gamesB !== null) {
+                                const gamesA = set.gamesA ?? 0, gamesB = set.gamesB ?? 0;
+                                if (gamesA >= 3 && gamesA > gamesB + 1) liveSetsA++;
+                                else if (gamesB >= 3 && gamesB > gamesA + 1) liveSetsB++;
+                                else if (gamesA === 4 && gamesB === 2) liveSetsA++;
+                                else if (gamesB === 4 && gamesA === 2) liveSetsB++;
+                                else if (gamesA === 4 && gamesB === 3) liveSetsA++;
+                                else if (gamesB === 4 && gamesA === 3) liveSetsB++;
+                            }
+                        }
+                        const hasScores = match.games.some(g => g.gamesA !== null || g.gamesB !== null);
+
+                        return `
+                            <div class="bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 ${cardBorder}">
+                                <h3 class="text-xl font-semibold text-center ${titleColor} mb-4">${matchTitle}</h3>
+                                <div class="flex justify-between items-center mb-4">
+                                    <div class="text-center w-2/5">
+                                        <div class="font-bold text-lg">${match.teamA.name}</div>
+                                        <div class="text-sm text-gray-400">${match.teamA.player1} - ${match.teamA.player2}</div>
+                                    </div>
+                                    <div class="text-2xl font-bold text-gray-500">VS</div>
+                                    <div class="text-center w-2/5">
+                                        <div class="font-bold text-lg">${match.teamB.name}</div>
+                                        <div class="text-sm text-gray-400">${match.teamB.player1} - ${match.teamB.player2}</div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-3 text-center">
+                                    ${[0, 1, 2].map(setIndex => `
+                                    <div class="bg-gray-700 p-2 rounded-md">
+                                        <div class="text-xs text-gray-400 mb-1">Set ${setIndex + 1}</div>
+                                        <div class="flex items-center justify-center gap-2">
+                                            <input type="number" min="0" max="7" placeholder="0" class="finals-score-input w-10 text-center bg-gray-600 rounded-md p-1 border border-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none" id="finals-${match.id}-set-${setIndex}-team-A" data-match-id="${match.id}" data-set-index="${setIndex}" data-team="A" value="${match.games[setIndex]?.gamesA ?? ''}" ${(isMatchComplete && setIndex >= (match.setsA + match.setsB)) ? 'disabled' : ''}>
+                                            <span class="text-gray-400">-</span>
+                                            <input type="number" min="0" max="7" placeholder="0" class="finals-score-input w-10 text-center bg-gray-600 rounded-md p-1 border border-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none" id="finals-${match.id}-set-${setIndex}-team-B" data-match-id="${match.id}" data-set-index="${setIndex}" data-team="B" value="${match.games[setIndex]?.gamesB ?? ''}" ${(isMatchComplete && setIndex >= (match.setsA + match.setsB)) ? 'disabled' : ''}>
+                                        </div>
+                                    </div>`).join('')}
+                                </div>
+                                ${hasScores ? `
+                                    <div class="mt-4 text-center font-bold text-xl">
+                                        <span class="${liveSetsA > liveSetsB ? 'text-green-400' : 'text-white'}">${liveSetsA}</span>
+                                        <span class="text-gray-500 mx-2">-</span>
+                                        <span class="${liveSetsB > liveSetsA ? 'text-green-400' : 'text-white'}">${liveSetsB}</span>
+                                    </div>
+                                ` : ''}
                             </div>
-                            <div class="text-2xl font-bold text-gray-500">VS</div>
-                            <div class="text-center w-2/5">
-                                <div class="font-bold text-lg">${second.name}</div>
-                                <div class="text-sm text-gray-400">${second.player1} - ${second.player2}</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-slate-400">
-                        <h3 class="text-xl font-semibold text-center text-slate-300 mb-4">Finale 3° e 4° Posto</h3>
-                        <div class="flex justify-between items-center">
-                            <div class="text-center w-2/5"><div class="font-bold text-lg">${third.name}</div><div class="text-sm text-gray-400">${third.player1} - ${third.player2}</div></div>
-                            <div class="text-2xl font-bold text-gray-500">VS</div>
-                            <div class="text-center w-2/5"><div class="font-bold text-lg">${fourth.name}</div><div class="text-sm text-gray-400">${fourth.player1} - ${fourth.player2}</div></div>
-                        </div>
-                    </div>`;
+                        `;
+                    }).join('')}
+                `;
+
+                title.textContent = "Finali";
+                description.textContent = "Le squadre si sfideranno per il podio";
                 finalsContainer.classList.remove('hidden');
                 matchesContainer.classList.add('hidden');
                 finalizeBtnContainer.classList.add('hidden');
-                title.textContent = "Finali";
-                description.textContent = "Le squadre si sfideranno per il podio";
             }
 
             function renderApp() {
@@ -303,6 +356,25 @@
                 const scrollY = window.scrollY;
                 renderMatches();
                 renderStandings();
+                window.scrollTo(0, scrollY);
+                if (focusedElementId) {
+                    const focusedElement = document.getElementById(focusedElementId);
+                    if (focusedElement) {
+                        focusedElement.focus();
+                        focusedElement.selectionStart = focusedElement.selectionEnd = focusedElement.value.length;
+                    }
+                }
+            }
+
+            function updateFinalsScore(matchId, setIndex, team, value, focusedElementId) {
+                const match = state.finalsMatches.find(m => m.id === matchId);
+                if (!match) return;
+                const score = value === '' ? null : parseInt(value, 10);
+                if (team === 'A') match.games[setIndex].gamesA = score; else match.games[setIndex].gamesB = score;
+                recalculateMatchResult(match);
+                saveState();
+                const scrollY = window.scrollY;
+                renderFinals();
                 window.scrollTo(0, scrollY);
                 if (focusedElementId) {
                     const focusedElement = document.getElementById(focusedElementId);
@@ -367,6 +439,63 @@
                 state.standings = standings;
             }
 
+            function loadTeamsFromFile(file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    try {
+                        let data;
+                        const content = e.target.result;
+
+                        if (file.name.endsWith('.json')) {
+                            data = JSON.parse(content);
+                        } else if (file.name.endsWith('.yaml') || file.name.endsWith('.yml')) {
+                            // Simple YAML parser for our specific structure
+                            const lines = content.split('\n').filter(line => line.trim() && !line.trim().startsWith('#'));
+                            data = { teams: [] };
+                            let currentTeam = null;
+
+                            for (const line of lines) {
+                                const trimmed = line.trim();
+                                if (trimmed.startsWith('- name:')) {
+                                    if (currentTeam) data.teams.push(currentTeam);
+                                    currentTeam = { name: trimmed.split('name:')[1].trim().replace(/['"]/g, '') };
+                                } else if (trimmed.startsWith('player1:') && currentTeam) {
+                                    currentTeam.player1 = trimmed.split('player1:')[1].trim().replace(/['"]/g, '');
+                                } else if (trimmed.startsWith('player2:') && currentTeam) {
+                                    currentTeam.player2 = trimmed.split('player2:')[1].trim().replace(/['"]/g, '');
+                                }
+                            }
+                            if (currentTeam) data.teams.push(currentTeam);
+                        }
+
+                        if (data && data.teams && Array.isArray(data.teams)) {
+                            // Validate that we have exactly 4 teams
+                            if (data.teams.length !== 4) {
+                                alert('Il file deve contenere esattamente 4 squadre!');
+                                return;
+                            }
+
+                            // Update state with loaded teams
+                            data.teams.forEach((team, index) => {
+                                if (index < state.teams.length) {
+                                    state.teams[index].name = team.name || '';
+                                    state.teams[index].player1 = team.player1 || '';
+                                    state.teams[index].player2 = team.player2 || '';
+                                }
+                            });
+
+                            renderSetup();
+                            console.log('Squadre caricate con successo!');
+                        } else {
+                            throw new Error('Formato file non valido');
+                        }
+                    } catch (error) {
+                        alert('Errore nel caricamento del file: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+
             startTournamentBtn.addEventListener('click', () => {
                 const nameInputs = teamsSetupGrid.querySelectorAll('input[data-field="name"]');
                 const p1Inputs = teamsSetupGrid.querySelectorAll('input[data-field="player1"]');
@@ -378,13 +507,32 @@
                 calculateAndSortStandings();
                 state.appView = 'tournament';
                 state.finalsGenerated = false;
+                state.finalsMatches = [];
                 saveState();
                 renderApp();
+            });
+
+            loadTeamsBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    loadTeamsFromFile(file);
+                }
+                fileInput.value = '';
             });
 
             matchesContainer.addEventListener('input', (e) => {
                 if (e.target.classList.contains('score-input')) {
                     updateScore(parseInt(e.target.dataset.matchId), parseInt(e.target.dataset.setIndex), e.target.dataset.team, e.target.value, e.target.id);
+                }
+            });
+
+            finalsContainer.addEventListener('input', (e) => {
+                if (e.target.classList.contains('finals-score-input')) {
+                    updateFinalsScore(e.target.dataset.matchId, parseInt(e.target.dataset.setIndex), e.target.dataset.team, e.target.value, e.target.id);
                 }
             });
 
