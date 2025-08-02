@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestore Torneo di Padel</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            color: #f3f4f6;
+        }
+
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="antialiased">
+
+    <div id="app" class="container mx-auto p-4 md:p-8 max-w-7xl">
+
+        <div id="setup-container">
+            <header class="text-center mb-8 relative">
+                <h1 class="text-4xl md:text-5xl font-bold text-white tracking-tight">Gestore Torneo di Padel</h1>
+                <p class="mt-2 text-lg text-gray-400">Configura le squadre e inizia il torneo.</p>
+                <button id="reset-btn-setup" title="Resetta Torneo"
+                    class="absolute top-0 right-0 text-gray-500 hover:text-red-500 transition-colors p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </header>
+
+            <div class="bg-gray-800 rounded-xl shadow-2xl p-6 md:p-8">
+                <h2 class="text-2xl font-semibold mb-6 text-white border-b border-gray-700 pb-3">Squadre Partecipanti
+                </h2>
+                <div id="teams-setup-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                <div class="mt-8 text-center">
+                    <button id="start-tournament-btn"
+                        class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
+                        Inizia Torneo
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tournament-container" class="hidden">
+            <header class="text-center mb-8 relative">
+                <h1 id="tournament-title" class="text-4xl md:text-5xl font-bold text-white tracking-tight">Fase a Gironi
+                </h1>
+                <p class="mt-2 text-lg text-gray-400">Inserisci i risultati delle partite per aggiornare la classifica.
+                </p>
+                <button id="reset-btn-tournament" title="Resetta Torneo"
+                    class="absolute top-0 right-0 text-gray-500 hover:text-red-500 transition-colors p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </header>
+
+            <div class="flex flex-col lg:flex-row gap-8">
+                <div class="w-full lg:w-2/3">
+                    <div id="matches-container" class="space-y-6"></div>
+                    <div id="finals-container" class="hidden space-y-6 mt-8"></div>
+                    <div id="finalize-btn-container" class="mt-8 flex justify-center">
+                        <button id="finalize-round-robin-btn"
+                            class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50">
+                            Genera Finali
+                        </button>
+                    </div>
+                </div>
+
+                <div class="w-full lg:w-1/3">
+                    <div class="bg-gray-800 rounded-xl shadow-2xl p-6 sticky top-8">
+                        <h2 class="text-2xl font-semibold text-white mb-4 border-b border-gray-700 pb-3">Classifica</h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="text-xs text-gray-400 uppercase">
+                                    <tr>
+                                        <th class="p-2">Pos</th>
+                                        <th class="p-2">Squadra</th>
+                                        <th class="p-2 text-center">PT</th>
+                                        <th class="p-2 text-center">V-S</th>
+                                        <th class="p-2 text-center">ΔSet</th>
+                                        <th class="p-2 text-center">ΔGame</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="standings-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const STORAGE_KEY = 'padelTournamentState';
+
+            let state = {
+                teams: [
+                    { id: 1, name: 'Team 1', player1: 'Giuseppe', player2: 'Chiara' },
+                    { id: 2, name: 'Team 2', player1: 'Alessandro', player2: 'Martina' },
+                    { id: 3, name: 'Team 3', player1: 'Onofrio', player2: 'Alessia' },
+                    { id: 4, name: 'Team 4', player1: 'Alfonso', player2: 'Assia' }
+                ],
+                matches: [],
+                standings: [],
+                appView: 'setup',
+                finalsGenerated: false
+            };
+
+            const setupContainer = document.getElementById('setup-container');
+            const tournamentContainer = document.getElementById('tournament-container');
+            const teamsSetupGrid = document.getElementById('teams-setup-grid');
+            const startTournamentBtn = document.getElementById('start-tournament-btn');
+            const matchesContainer = document.getElementById('matches-container');
+            const standingsBody = document.getElementById('standings-body');
+            const finalizeBtn = document.getElementById('finalize-round-robin-btn');
+            const finalizeBtnContainer = document.getElementById('finalize-btn-container');
+            const finalsContainer = document.getElementById('finals-container');
+            const tournamentTitle = document.getElementById('tournament-title');
+            const resetBtnSetup = document.getElementById('reset-btn-setup');
+            const resetBtnTournament = document.getElementById('reset-btn-tournament');
+
+            function saveState() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            }
+
+            function loadState() {
+                const savedState = localStorage.getItem(STORAGE_KEY);
+                if (savedState) {
+                    state = JSON.parse(savedState);
+                }
+            }
+
+            function renderSetup() {
+                teamsSetupGrid.innerHTML = state.teams.map(team => `
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <input type="text" value="${team.name}" data-team-id="${team.id}" data-field="name" class="w-full bg-gray-600 text-white font-semibold p-2 rounded-md mb-2 border border-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Nome Squadra">
+                        <div class="flex gap-2">
+                            <input type="text" value="${team.player1}" data-team-id="${team.id}" data-field="player1" class="w-1/2 bg-gray-600 text-white p-2 rounded-md border border-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Giocatore 1">
+                            <input type="text" value="${team.player2}" data-team-id="${team.id}" data-field="player2" class="w-1/2 bg-gray-600 text-white p-2 rounded-md border border-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Giocatore 2">
+                        </div>
+                    </div>
+                `).join('');
+                setupContainer.classList.remove('hidden');
+                tournamentContainer.classList.add('hidden');
+            }
+
+            function renderMatches() {
+                matchesContainer.innerHTML = state.matches.map((dayMatches, dayIndex) => `
+                    <div class="day-container mb-8">
+                        <h3 class="text-2xl font-bold text-indigo-400 mb-4 border-b-2 border-indigo-400/50 pb-2">Giornata ${dayIndex + 1}</h3>
+                        <div class="space-y-6">
+                            ${dayMatches.map(match => {
+                    const teamA = state.teams.find(t => t.id === match.teamA_id);
+                    const teamB = state.teams.find(t => t.id === match.teamB_id);
+                    const isMatchComplete = match.setsA === 2 || match.setsB === 2;
+                    const cardBorder = isMatchComplete ? 'border-green-500' : 'border-gray-700';
+                    let liveSetsA = 0, liveSetsB = 0;
+                    for (const set of match.games) {
+                        if (set.gamesA !== null || set.gamesB !== null) {
+                            const gamesA = set.gamesA ?? 0, gamesB = set.gamesB ?? 0;
+                            if (gamesA >= 3 && gamesA > gamesB + 1) liveSetsA++;
+                            else if (gamesB >= 3 && gamesB > gamesA + 1) liveSetsB++;
+                            else if (gamesA === 4 && gamesB === 2) liveSetsA++;
+                            else if (gamesB === 4 && gamesA === 2) liveSetsB++;
+                            else if (gamesA === 4 && gamesB === 3) liveSetsA++;
+                            else if (gamesB === 4 && gamesA === 3) liveSetsB++;
+                        }
+                    }
+                    const hasScores = match.games.some(g => g.gamesA !== null || g.gamesB !== null);
+                    return `
+                                    <div class="bg-gray-800 rounded-xl shadow-lg p-5 border-l-4 ${cardBorder} transition-colors">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <div class="font-semibold text-lg text-white">${teamA.name}</div><div class="text-gray-400 font-bold">VS</div><div class="font-semibold text-lg text-white text-right">${teamB.name}</div>
+                                        </div>
+                                        <div class="text-xs text-center text-gray-400 mb-4">${teamA.player1} - ${teamA.player2} &nbsp;|&nbsp; ${teamB.player1} - ${teamB.player2}</div>
+                                        <div class="grid grid-cols-3 gap-3 text-center">
+                                            ${[0, 1, 2].map(setIndex => `
+                                                <div class="bg-gray-700 p-2 rounded-md">
+                                                    <div class="text-xs text-gray-400 mb-1">Set ${setIndex + 1}</div>
+                                                    <div class="flex items-center justify-center gap-2">
+                                                        <input type="number" min="0" max="7" placeholder="0" class="score-input w-10 text-center bg-gray-600 rounded-md p-1 border border-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none" id="match-${match.id}-set-${setIndex}-team-A" data-match-id="${match.id}" data-set-index="${setIndex}" data-team="A" value="${match.games[setIndex]?.gamesA ?? ''}" ${(isMatchComplete && setIndex >= (match.setsA + match.setsB)) ? 'disabled' : ''}>
+                                                        <span class="text-gray-400">-</span>
+                                                        <input type="number" min="0" max="7" placeholder="0" class="score-input w-10 text-center bg-gray-600 rounded-md p-1 border border-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none" id="match-${match.id}-set-${setIndex}-team-B" data-match-id="${match.id}" data-set-index="${setIndex}" data-team="B" value="${match.games[setIndex]?.gamesB ?? ''}" ${(isMatchComplete && setIndex >= (match.setsA + match.setsB)) ? 'disabled' : ''}>
+                                                    </div>
+                                                </div>`).join('')}
+                                        </div>
+                                        ${hasScores ? `<div class="mt-4 text-center font-bold text-xl"><span class="${liveSetsA > liveSetsB ? 'text-green-400' : 'text-white'}">${liveSetsA}</span><span class="text-gray-500 mx-2">-</span><span class="${liveSetsB > liveSetsA ? 'text-green-400' : 'text-white'}">${liveSetsB}</span></div>` : ''}
+                                    </div>`;
+                }).join('')}
+                        </div>
+                    </div>`).join('');
+            }
+
+            function renderStandings() {
+                standingsBody.innerHTML = state.standings.map((s, index) => {
+                    const team = state.teams.find(t => t.id === s.teamId);
+                    const setDiff = s.setsWon - s.setsLost;
+                    const gameDiff = s.gamesWon - s.gamesLost;
+                    return `
+                        <tr class="border-b border-gray-700 last:border-b-0 hover:bg-gray-700/50">
+                            <td class="p-3 font-bold">${index + 1}</td><td class="p-3 font-semibold">${team.name}</td>
+                            <td class="p-3 text-center font-bold text-indigo-400">${s.points}</td><td class="p-3 text-center text-sm">${s.matchesWon}-${s.matchesLost}</td>
+                            <td class="p-3 text-center text-sm ${setDiff >= 0 ? 'text-green-400' : 'text-red-400'}">${setDiff >= 0 ? '+' : ''}${setDiff}</td>
+                            <td class="p-3 text-center text-sm ${gameDiff >= 0 ? 'text-green-400' : 'text-red-400'}">${gameDiff >= 0 ? '+' : ''}${gameDiff}</td>
+                        </tr>`;
+                }).join('');
+            }
+
+            function renderFinals() {
+                if (state.standings.length < 4) return;
+                const [first, second, third, fourth] = state.standings.map(s => state.teams.find(t => t.id === s.teamId));
+                finalsContainer.innerHTML = `
+                    <h2 class="text-3xl font-bold text-center text-white mt-10 mb-4">Fase Finale</h2>
+                    <div class="bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-amber-400">
+                        <h3 class="text-xl font-semibold text-center text-amber-300 mb-4">Finale 1° e 2° Posto</h3>
+                        <div class="flex justify-between items-center">
+                            <div class="text-center w-2/5"><div class="font-bold text-lg">${first.name}</div><div class="text-sm text-gray-400">${first.player1} - ${first.player2}</div></div>
+                            <div class="text-2xl font-bold text-gray-500">VS</div>
+                            <div class="text-center w-2/5"><div class="font-bold text-lg">${second.name}</div><div class="text-sm text-gray-400">${second.player1} - ${second.player2}</div></div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-slate-400">
+                        <h3 class="text-xl font-semibold text-center text-slate-300 mb-4">Finale 3° e 4° Posto</h3>
+                        <div class="flex justify-between items-center">
+                            <div class="text-center w-2/5"><div class="font-bold text-lg">${third.name}</div><div class="text-sm text-gray-400">${third.player1} - ${third.player2}</div></div>
+                            <div class="text-2xl font-bold text-gray-500">VS</div>
+                            <div class="text-center w-2/5"><div class="font-bold text-lg">${fourth.name}</div><div class="text-sm text-gray-400">${fourth.player1} - ${fourth.player2}</div></div>
+                        </div>
+                    </div>`;
+                finalsContainer.classList.remove('hidden');
+                matchesContainer.classList.add('hidden');
+                finalizeBtnContainer.classList.add('hidden');
+                tournamentTitle.textContent = "Finali";
+            }
+
+            function renderApp() {
+                if (state.appView === 'tournament') {
+                    setupContainer.classList.add('hidden');
+                    tournamentContainer.classList.remove('hidden');
+                    renderMatches();
+                    renderStandings();
+                    if (state.finalsGenerated) {
+                        renderFinals();
+                    }
+                } else {
+                    renderSetup();
+                }
+            }
+
+            function generateMatches() {
+                const teams = [...state.teams];
+                if (teams.length < 2) { state.matches = []; return; }
+                const schedule = [], rotatingTeams = teams.slice(1);
+                let matchIdCounter = 1;
+                for (let round = 0; round < teams.length - 1; round++) {
+                    const roundMatches = [];
+                    roundMatches.push({ id: matchIdCounter++, teamA_id: teams[0].id, teamB_id: rotatingTeams[rotatingTeams.length - 1].id, setsA: null, setsB: null, games: [{}, {}, {}] });
+                    for (let i = 0; i < (teams.length / 2) - 1; i++) {
+                        roundMatches.push({ id: matchIdCounter++, teamA_id: rotatingTeams[i].id, teamB_id: rotatingTeams[rotatingTeams.length - 2 - i].id, setsA: null, setsB: null, games: [{}, {}, {}] });
+                    }
+                    schedule.push(roundMatches);
+                    rotatingTeams.unshift(rotatingTeams.pop());
+                }
+                state.matches = schedule;
+            }
+
+            function updateScore(matchId, setIndex, team, value, focusedElementId) {
+                const match = state.matches.flat().find(m => m.id === matchId);
+                if (!match) return;
+                const score = value === '' ? null : parseInt(value, 10);
+                if (team === 'A') match.games[setIndex].gamesA = score; else match.games[setIndex].gamesB = score;
+                recalculateMatchResult(match);
+                calculateAndSortStandings();
+                saveState();
+                const scrollY = window.scrollY;
+                renderMatches();
+                renderStandings();
+                window.scrollTo(0, scrollY);
+                if (focusedElementId) {
+                    const focusedElement = document.getElementById(focusedElementId);
+                    if (focusedElement) {
+                        focusedElement.focus();
+                        focusedElement.selectionStart = focusedElement.selectionEnd = focusedElement.value.length;
+                    }
+                }
+            }
+
+            function recalculateMatchResult(match) {
+                let setsA = 0, setsB = 0;
+                for (const set of match.games) {
+                    if (set.gamesA !== null || set.gamesB !== null) {
+                        const gamesA = set.gamesA ?? 0, gamesB = set.gamesB ?? 0;
+                        if (gamesA >= 3 && gamesA > gamesB + 1) setsA++;
+                        else if (gamesB >= 3 && gamesB > gamesA + 1) setsB++;
+                        else if (gamesA === 4 && gamesB === 2) setsA++;
+                        else if (gamesB === 4 && gamesA === 2) setsB++;
+                        else if (gamesA === 4 && gamesB === 3) setsA++;
+                        else if (gamesB === 4 && gamesA === 3) setsB++;
+                    }
+                }
+                if (setsA === 2 || setsB === 2) { match.setsA = setsA; match.setsB = setsB; }
+                else { match.setsA = null; match.setsB = null; }
+            }
+
+            function calculateAndSortStandings() {
+                let standings = state.teams.map(team => ({ teamId: team.id, points: 0, matchesPlayed: 0, matchesWon: 0, matchesLost: 0, setsWon: 0, setsLost: 0, gamesWon: 0, gamesLost: 0 }));
+                const completedMatches = state.matches.flat().filter(m => m.setsA === 2 || m.setsB === 2);
+                for (const match of completedMatches) {
+                    const statsA = standings.find(s => s.teamId === match.teamA_id);
+                    const statsB = standings.find(s => s.teamId === match.teamB_id);
+                    statsA.matchesPlayed++; statsB.matchesPlayed++;
+                    let matchGamesA = 0, matchGamesB = 0;
+                    for (let i = 0; i < (match.setsA + match.setsB); i++) { matchGamesA += match.games[i].gamesA || 0; matchGamesB += match.games[i].gamesB || 0; }
+                    statsA.gamesWon += matchGamesA; statsA.gamesLost += matchGamesB; statsB.gamesWon += matchGamesB; statsB.gamesLost += matchGamesA;
+                    statsA.setsWon += match.setsA; statsA.setsLost += match.setsB; statsB.setsWon += match.setsB; statsB.setsLost += match.setsA;
+                    if (match.setsA > match.setsB) {
+                        statsA.matchesWon++; statsB.matchesLost++;
+                        if (match.setsA === 2 && match.setsB === 0) { statsA.points += 3; } else { statsA.points += 2; statsB.points += 1; }
+                    } else {
+                        statsB.matchesWon++; statsA.matchesLost++;
+                        if (match.setsB === 2 && match.setsA === 0) { statsB.points += 3; } else { statsB.points += 2; statsA.points += 1; }
+                    }
+                }
+                standings.sort((a, b) => {
+                    if (a.points !== b.points) return b.points - a.points;
+                    const teamsWithSamePoints = standings.filter(s => s.points === a.points);
+                    if (teamsWithSamePoints.length === 2) {
+                        const directMatch = completedMatches.find(m => (m.teamA_id === a.teamId && m.teamB_id === b.teamId) || (m.teamA_id === b.teamId && m.teamB_id === a.teamId));
+                        if (directMatch) {
+                            if (directMatch.teamA_id === a.teamId) { if (directMatch.setsA > directMatch.setsB) return -1; if (directMatch.setsB > directMatch.setsA) return 1; }
+                            else { if (directMatch.setsA > directMatch.setsB) return 1; if (directMatch.setsB > directMatch.setsA) return -1; }
+                        }
+                    }
+                    const setDiffA = a.setsWon - a.setsLost, setDiffB = b.setsWon - b.setsLost; if (setDiffA !== setDiffB) return setDiffB - setDiffA;
+                    const gameDiffA = a.gamesWon - a.gamesLost, gameDiffB = b.gamesWon - b.gamesLost; if (gameDiffA !== gameDiffB) return gameDiffB - gameDiffA;
+                    if (a.gamesWon !== b.gamesWon) return b.gamesWon - a.gamesWon;
+                    return 0;
+                });
+                state.standings = standings;
+            }
+
+            startTournamentBtn.addEventListener('click', () => {
+                const nameInputs = teamsSetupGrid.querySelectorAll('input[data-field="name"]');
+                const p1Inputs = teamsSetupGrid.querySelectorAll('input[data-field="player1"]');
+                const p2Inputs = teamsSetupGrid.querySelectorAll('input[data-field="player2"]');
+                nameInputs.forEach(input => { const team = state.teams.find(t => t.id == input.dataset.teamId); if (team) team.name = input.value; });
+                p1Inputs.forEach(input => { const team = state.teams.find(t => t.id == input.dataset.teamId); if (team) team.player1 = input.value; });
+                p2Inputs.forEach(input => { const team = state.teams.find(t => t.id == input.dataset.teamId); if (team) team.player2 = input.value; });
+                generateMatches();
+                calculateAndSortStandings();
+                state.appView = 'tournament';
+                state.finalsGenerated = false;
+                saveState();
+                renderApp();
+            });
+
+            matchesContainer.addEventListener('input', (e) => {
+                if (e.target.classList.contains('score-input')) {
+                    updateScore(parseInt(e.target.dataset.matchId), parseInt(e.target.dataset.setIndex), e.target.dataset.team, e.target.value, e.target.id);
+                }
+            });
+
+            finalizeBtn.addEventListener('click', () => {
+                const allMatchesPlayed = state.matches.flat().every(m => m.setsA === 2 || m.setsB === 2);
+                if (!allMatchesPlayed) { alert('Devi prima completare tutte le partite della fase a gironi!'); return; }
+                state.finalsGenerated = true;
+                saveState();
+                renderFinals();
+            });
+
+            function handleReset() {
+                if (confirm('Sei sicuro di voler resettare il torneo? Tutti i progressi salvati andranno persi.')) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    location.reload();
+                }
+            }
+            resetBtnSetup.addEventListener('click', handleReset);
+            resetBtnTournament.addEventListener('click', handleReset);
+
+            loadState();
+            renderApp();
+        });
+    </script>
+</body>
+
+</html>
