@@ -153,10 +153,19 @@
             function renderSetup() {
                 teamsSetupGrid.innerHTML = state.teams.map(team => `
                     <div class="bg-gray-700 p-4 rounded-lg">
-                        <input type="text" value="${team.name}" data-team-id="${team.id}" data-field="name" class="w-full bg-gray-600 text-white font-semibold p-2 rounded-md mb-2 border border-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Nome Squadra">
+                        <div class="mb-2">
+                            <input type="text" value="${team.name}" data-team-id="${team.id}" data-field="name" class="w-full bg-gray-600 text-white font-semibold p-2 rounded-md border border-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Nome Squadra">
+                            <div class="error-message hidden text-red-400 text-sm mt-1" data-team-id="${team.id}" data-field="name">Compilare questo campo</div>
+                        </div>
                         <div class="flex gap-2">
-                            <input type="text" value="${team.player1}" data-team-id="${team.id}" data-field="player1" class="w-1/2 bg-gray-600 text-white p-2 rounded-md border border-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Giocatore 1">
-                            <input type="text" value="${team.player2}" data-team-id="${team.id}" data-field="player2" class="w-1/2 bg-gray-600 text-white p-2 rounded-md border border-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Giocatore 2">
+                            <div class="w-1/2">
+                                <input type="text" value="${team.player1}" data-team-id="${team.id}" data-field="player1" class="w-full bg-gray-600 text-white p-2 rounded-md border border-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Giocatore 1">
+                                <div class="error-message hidden text-red-400 text-sm mt-1" data-team-id="${team.id}" data-field="player1">Compilare questo campo</div>
+                            </div>
+                            <div class="w-1/2">
+                                <input type="text" value="${team.player2}" data-team-id="${team.id}" data-field="player2" class="w-full bg-gray-600 text-white p-2 rounded-md border border-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Giocatore 2">
+                                <div class="error-message hidden text-red-400 text-sm mt-1" data-team-id="${team.id}" data-field="player2">Compilare questo campo</div>
+                            </div>
                         </div>
                     </div>
                 `).join('');
@@ -496,10 +505,58 @@
                 reader.readAsText(file);
             }
 
+            function clearErrorMessages() {
+                const errorMessages = teamsSetupGrid.querySelectorAll('.error-message');
+                errorMessages.forEach(msg => msg.classList.add('hidden'));
+
+                const inputs = teamsSetupGrid.querySelectorAll('input');
+                inputs.forEach(input => {
+                    input.classList.remove('border-red-500');
+                    input.classList.add('border-gray-500');
+                });
+            }
+
+            function showErrorMessage(teamId, field) {
+                const errorMsg = teamsSetupGrid.querySelector(`.error-message[data-team-id="${teamId}"][data-field="${field}"]`);
+                const input = teamsSetupGrid.querySelector(`input[data-team-id="${teamId}"][data-field="${field}"]`);
+
+                if (errorMsg) errorMsg.classList.remove('hidden');
+                if (input) {
+                    input.classList.remove('border-gray-500');
+                    input.classList.add('border-red-500');
+                }
+            }
+
             startTournamentBtn.addEventListener('click', () => {
                 const nameInputs = teamsSetupGrid.querySelectorAll('input[data-field="name"]');
                 const p1Inputs = teamsSetupGrid.querySelectorAll('input[data-field="player1"]');
                 const p2Inputs = teamsSetupGrid.querySelectorAll('input[data-field="player2"]');
+
+                clearErrorMessages();
+                let hasErrors = false;
+                nameInputs.forEach(input => {
+                    if (!input.value.trim()) {
+                        showErrorMessage(input.dataset.teamId, 'name');
+                        hasErrors = true;
+                    }
+                });
+                p1Inputs.forEach(input => {
+                    if (!input.value.trim()) {
+                        showErrorMessage(input.dataset.teamId, 'player1');
+                        hasErrors = true;
+                    }
+                });
+                p2Inputs.forEach(input => {
+                    if (!input.value.trim()) {
+                        showErrorMessage(input.dataset.teamId, 'player2');
+                        hasErrors = true;
+                    }
+                });
+
+                if (hasErrors) {
+                    return;
+                }
+
                 nameInputs.forEach(input => { const team = state.teams.find(t => t.id == input.dataset.teamId); if (team) team.name = input.value; });
                 p1Inputs.forEach(input => { const team = state.teams.find(t => t.id == input.dataset.teamId); if (team) team.player1 = input.value; });
                 p2Inputs.forEach(input => { const team = state.teams.find(t => t.id == input.dataset.teamId); if (team) team.player2 = input.value; });
@@ -510,6 +567,21 @@
                 state.finalsMatches = [];
                 saveState();
                 renderApp();
+            });
+
+            teamsSetupGrid.addEventListener('input', (e) => {
+                if (e.target.tagName === 'INPUT') {
+                    const teamId = e.target.dataset.teamId;
+                    const field = e.target.dataset.field;
+
+                    if (e.target.value.trim()) {
+                        const errorMsg = teamsSetupGrid.querySelector(`.error-message[data-team-id="${teamId}"][data-field="${field}"]`);
+                        if (errorMsg) errorMsg.classList.add('hidden');
+
+                        e.target.classList.remove('border-red-500');
+                        e.target.classList.add('border-gray-500');
+                    }
+                }
             });
 
             loadTeamsBtn.addEventListener('click', () => {
